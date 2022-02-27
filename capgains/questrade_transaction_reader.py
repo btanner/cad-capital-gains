@@ -13,15 +13,16 @@ from typing import Any, Optional
 @dataclasses.dataclass
 class ParsedEntry:
     """Matches structure of Transaction but we'll build each incrementally."""
-    date: Any=None
-    description: str='?'
-    ticker: str='?'
-    action: str='?'
+    date: Any = None
+    description: str = '?'
+    ticker: str = '?'
+    action: str = '?'
     qty: float = math.inf
     price: float = math.inf
     commission: float = math.inf
     currency: str = '?'
     net: float = math.inf
+
 
 class TransactionsReader:
     """An interface that converts a CSV-file with transaction entries into a
@@ -50,13 +51,14 @@ class TransactionsReader:
     def get_transactions(cls, csv_file):
         """Convert the CSV-file entries into a list of Transactions."""
         transactions = []
-        pass_through_cols = {"description":"description", "action":"action", "currency":"currency","symbol":"ticker"}
+        pass_through_cols = {"description": "description", "action": "action", "currency": "currency",
+                             "symbol": "ticker"}
         try:
             with open(csv_file, newline='') as f:
                 reader = csv.reader(f)
                 last_date = None
                 for entry_no, raw_entry in enumerate(reader):
-                    pass_through_vals = {v:raw_entry[cls.file_columns.index(k)] for k,v in pass_through_cols.items()}
+                    pass_through_vals = {v: raw_entry[cls.file_columns.index(k)] for k, v in pass_through_cols.items()}
                     if pass_through_vals['action'] == '':
                         # For some reason, some of these are mislabeled.
                         if raw_entry[cls.file_columns.index('activity')].casefold() == 'dividends':
@@ -67,7 +69,8 @@ class TransactionsReader:
                     if pass_through_vals['action'] not in cls.keep_actions:
                         # Probably should discard this row, but not before we make sure we expect to discard it.
                         if pass_through_vals['action'] not in cls.skip_actions:
-                            print(f"Unknown action: {pass_through_vals['action']} not in our skip list. Entry:{raw_entry}")
+                            print(
+                                f"Unknown action: {pass_through_vals['action']} not in our skip list. Entry:{raw_entry}")
                         else:
                             continue
                     entry = ParsedEntry(**pass_through_vals)
@@ -81,19 +84,19 @@ class TransactionsReader:
                         # of columns as we expect
                         raise ClickException(
                             "Transaction entry {}: expected {} columns, entry has {}"  # noqa: E501
-                            .format(entry_no,
-                                    expected_num_columns,
-                                    actual_num_columns))
+                                .format(entry_no,
+                                        expected_num_columns,
+                                        actual_num_columns))
                     date_idx = cls.file_columns.index("transaction_date")
                     date_str = raw_entry[date_idx]
                     try:
-                       entry.date = datetime.strptime(
+                        entry.date = datetime.strptime(
                             date_str.split(" ")[0],
                             '%Y-%m-%d').date()
                     except ValueError:
                         raise ClickException(
                             "The date ({}) was not entered in the correct format (YYYY-MM-DD)"  # noqa: E501
-                            .format(date_str))
+                                .format(date_str))
                     qty_idx = cls.file_columns.index("qty")
                     qty_str = raw_entry[qty_idx]
                     try:
@@ -101,7 +104,7 @@ class TransactionsReader:
                     except InvalidOperation:
                         raise ClickException(
                             "The quantity entered {} is not a valid number"
-                            .format(qty_str))
+                                .format(qty_str))
                     net_idx = cls.file_columns.index("net")
                     net_str = raw_entry[net_idx]
                     try:
@@ -109,7 +112,7 @@ class TransactionsReader:
                     except InvalidOperation:
                         raise ClickException(
                             "The net entered {} is not a valid number"
-                            .format(net_str))
+                                .format(net_str))
                     price_idx = cls.file_columns.index("price")
                     price_str = raw_entry[price_idx]
                     try:
@@ -117,7 +120,7 @@ class TransactionsReader:
                     except InvalidOperation:
                         raise ClickException(
                             "The price entered {} is not a valid number"
-                            .format(price_str))
+                                .format(price_str))
                     commission_idx = cls.file_columns.index("commission")
                     commission_str = raw_entry[commission_idx]
                     try:
@@ -125,7 +128,7 @@ class TransactionsReader:
                     except InvalidOperation:
                         raise ClickException(
                             "The commission entered {} is not a valid number"
-                            .format(commission_str))
+                                .format(commission_str))
                     transaction = Transaction(**dataclasses.asdict(entry))
                     transactions.append(transaction)
             transactions.sort(key=lambda x: x.date)

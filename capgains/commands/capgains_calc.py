@@ -1,9 +1,12 @@
+import pdb
+
 import click
 import tabulate
 from itertools import groupby
 
 from capgains.exchange_rate import ExchangeRate
 from capgains.ticker_gains import TickerGains
+from capgains import transaction
 
 # describes how to align the individual table columns
 colalign = (
@@ -19,11 +22,10 @@ colalign = (
 
 
 def _get_total_gains(transactions):
-    total = 0
+    total_gains = 0
     for t in transactions:
-        total += t.capital_gain
-    return total
-
+        total_gains += t.capital_gain
+    return total_gains
 
 def _get_map_of_currencies_to_exchange_rates(transactions):
     """First, split the list of transactions into sublists where each sublist
@@ -44,31 +46,42 @@ def _get_map_of_currencies_to_exchange_rates(transactions):
     return currencies_to_exchange_rates
 
 
-def calculate_gains(transactions, year, ticker):
+def calculate_gains(transactions, year, ticker, er_map):
     ticker_transactions = transactions.filter_by(tickers=[ticker],
                                                  max_year=year)
-    er_map = _get_map_of_currencies_to_exchange_rates(ticker_transactions)
     tg = TickerGains(ticker)
     tg.add_transactions(ticker_transactions, er_map)
-    return ticker_transactions.filter_by(year=year, action='SELL',
-                                         superficial_loss=False)
+    return ticker_transactions.filter_by(year=year, action=transaction.TransactionType.SELL,
+                                         superficial_loss=False), tg
 
 
 def capgains_calc(transactions, year, tickers=None):
     """Take a list of transactions and print the calculated capital
     gains in a separate tabular format for each specified ticker."""
+    overall_total_dividends = 0
+    overall_total_gains = 0
     filtered_transactions = transactions.filter_by(tickers=tickers)
     if not filtered_transactions:
         click.echo("No transactions available")
         return
+    # Get all transaction at once.
+    er_map = _get_map_of_currencies_to_exchange_rates(filtered_transactions)
     for ticker in filtered_transactions.tickers:
         click.echo("{}-{}".format(ticker, year))
-        transactions_to_report = calculate_gains(filtered_transactions, year,
-                                                 ticker)
+        transactions_to_report, ticker_gains = calculate_gains(filtered_transactions, year,
+                                                 ticker, er_map)
+        overall_total_dividends += ticker_gains.total_dividends
+        click.echo("[Total Dividends = {0:,.2f}]".format(ticker_gains.total_dividends))
+        click.echo("[Ending ACB = {0:,.2f}]".format(ticker_gains.total_acb))
+        click.echo("[Shares = {0:,.2f}]".format(ticker_gains.share_balance))
+        click.echo("[ACB/Share = {0:,.2f}]".format(ticker_gains.acb_per_share))
+
+
         if not transactions_to_report:
             click.echo("No capital gains\n")
             continue
         total_gains = _get_total_gains(transactions_to_report)
+        overall_total_gains += total_gains
         click.echo("[Total Gains = {0:,.2f}]".format(total_gains))
         headers = ["date", "description", "ticker", "qty", "proceeds", "ACB",
                    "outlays", "capital gain/loss"]
@@ -85,3 +98,4 @@ def capgains_calc(transactions, year, tickers=None):
         output = tabulate.tabulate(rows, headers=headers, tablefmt="psql",
                                    colalign=colalign, disable_numparse=True)
         click.echo("{}\n".format(output))
+    return overall_total_gains, overall_total_dividends

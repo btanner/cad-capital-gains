@@ -1,65 +1,61 @@
 from decimal import Decimal
+import enum
+import datetime
+
+
+class TransactionType(enum.Enum):
+    BUY = enum.auto()
+    SELL = enum.auto()
+    DIVIDEND = enum.auto()
+    DEPOSIT = enum.auto()
+    WITHDRAWAL = enum.auto()
+    FEE = enum.auto()
+    EXCHANGE = enum.auto()
+    CONVERT = enum.auto
+
+    @classmethod
+    def parse(cls, str_type: str) -> 'TransactionType':
+        str_type_lower = str_type.casefold()
+        if str_type_lower == 'buy':
+            return cls.BUY
+        elif str_type_lower == 'sell':
+            return cls.SELL
+        elif str_type_lower == 'div' or str_type_lower == 'dividends':
+            return cls.DIVIDEND
+        elif str_type_lower == 'fch':
+            return cls.FEE
+        elif str_type_lower == 'fxt':
+            return cls.EXCHANGE
+        elif str_type_lower == 'con':
+            return cls.CONVERT
+        elif str_type_lower == 'dep':
+            return cls.DEPOSIT
+        else:
+            raise ValueError(f'Unknown action: {str_type}')
 
 
 class Transaction:
     """Represents a transaction entry from the CSV-file"""
 
-    def __init__(self, date, description, ticker, action, qty, price,
-                 commission, currency):
-        self._date = date
-        self._description = description
-        self._ticker = ticker
-        self._action = action
-        self._qty = Decimal(qty)
-        self._price = Decimal(price)
-        self._commission = Decimal(commission)
-        self._currency = currency
-        self._exchange_rate = None
+    def __init__(self, date: datetime.date, description: str, ticker: str, action: TransactionType, qty: Decimal,
+                 price: Decimal,
+                 commission: Decimal, currency: Decimal, net: Decimal):
+        self.date = date
+        self.description = description
+        self.ticker = ticker
+        self.action = action
+        self.qty = Decimal(qty)
+        self.price = Decimal(price)
+        self.net = Decimal(net)
+        self.commission = Decimal(commission)
+        self.currency = currency
+        self.exchange_rate = None
         self._share_balance = Decimal(0.0)
-        self._proceeds = Decimal(0.0)
-        self._capital_gain = Decimal(0.0)
-        self._acb = Decimal(0.0)
+        self.proceeds = Decimal(0.0)
+        self.capital_gain = Decimal(0.0)
+        self.acb = Decimal(0.0)
         self._superficial_loss = False
 
-    @property
-    def date(self):
-        return self._date
-
-    @property
-    def description(self):
-        return self._description
-
-    @property
-    def ticker(self):
-        return self._ticker
-
-    @property
-    def action(self):
-        return self._action
-
-    @property
-    def qty(self):
-        return self._qty
-
-    @property
-    def price(self):
-        return self._price
-
-    @property
-    def commission(self):
-        return self._commission
-
-    @property
-    def currency(self):
-        return self._currency
-
-    @property
-    def exchange_rate(self):
-        return self._exchange_rate
-
-    @exchange_rate.setter
-    def exchange_rate(self, exchange_rate):
-        self._exchange_rate = Decimal(exchange_rate)
 
     @property
     def share_balance(self):
@@ -72,41 +68,13 @@ class Transaction:
         self._share_balance = Decimal(share_balance)
 
     @property
-    def proceeds(self):
-        return self._proceeds
-
-    @proceeds.setter
-    def proceeds(self, proceeds):
-        self._proceeds = Decimal(proceeds)
-
-    @property
-    def capital_gain(self):
-        return self._capital_gain
-
-    @capital_gain.setter
-    def capital_gain(self, capital_gain):
-        self._capital_gain = Decimal(capital_gain)
-
-    @property
-    def acb(self):
-        return self._acb
-
-    @acb.setter
-    def acb(self, acb):
-        self._acb = Decimal(acb)
-
-    @property
     def superficial_loss(self):
         return self._superficial_loss
-
-    @superficial_loss.setter
-    def superficial_loss(self, superficial_loss):
-        self._superficial_loss = Decimal(superficial_loss)
 
     @property
     def expenses(self):
         return self.commission * self.exchange_rate
 
     def set_superficial_loss(self):
-        self.superficial_loss = True
+        self._superficial_loss = True
         self.capital_gain = Decimal(0.0)

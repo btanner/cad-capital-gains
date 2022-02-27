@@ -4,6 +4,7 @@ from decimal import Decimal
 from click import ClickException
 
 
+
 class ExchangeRate:
     indicative_rate_min_date = date(2017, 1, 3)
     noon_rate_min_date = date(2007, 5, 1)
@@ -20,7 +21,6 @@ class ExchangeRate:
         self._start_date = start_date
         self._end_date = end_date
         self._rates = dict()
-
         if currency_from not in self.supported_currencies:
             raise ClickException(
                 "Currency ({}) is not currently supported. The supported "
@@ -49,6 +49,7 @@ class ExchangeRate:
 
     def _fetch_rates(self, start_date, end_date, forex_str):
         """Fetch exchange rates from the supplied URL"""
+        print(f'Trying to fetch from {start_date} to {end_date} forex_str:{forex_str} ')
         rates = {}
         # Always move the start date back 7 days in case the start
         # date, end date, and all days in between are all weekends/holidays
@@ -59,6 +60,7 @@ class ExchangeRate:
         url = "{}/{}/json".format(self.valet_obs_url, forex_str)
         response = None
         try:
+            print(f'submitting get request: {url}\nparams:{params}')
             response = requests.get(url=url, params=params)
         except requests.ConnectionError as e:
             raise ClickException(

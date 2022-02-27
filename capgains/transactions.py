@@ -1,11 +1,13 @@
+from capgains import transaction
+
 class Transactions:
     """Holds a collection of transactions"""
 
     def __init__(self, transactions):
         self._transactions = list()
         self._tickers = dict()
-        for transaction in transactions:
-            self.add_transaction(transaction)
+        for t in transactions:
+            self.add_transaction(t)
 
     @property
     def transactions(self):
@@ -26,13 +28,13 @@ class Transactions:
     def __getitem__(self, x):
         return self.transactions[x]
 
-    def add_transaction(self, transaction):
+    def add_transaction(self, trans):
         """Add a transaction to the list of stored transactions."""
-        self.transactions.append(transaction)
+        self.transactions.append(trans)
 
-        ticker_refcount = self._tickers.get(transaction.ticker, 0)
+        ticker_refcount = self._tickers.get(trans.ticker, 0)
         ticker_refcount += 1
-        self._tickers[transaction.ticker] = ticker_refcount
+        self._tickers[trans.ticker] = ticker_refcount
 
     def filter_by(self, tickers=None, year=None, max_year=None, action=None,
                   superficial_loss=None):
@@ -40,6 +42,9 @@ class Transactions:
         as ticker, year, etc) and return only the transactions that match the
         requested parameters.
         """
+        if action and not isinstance(action, transaction.TransactionType):
+            raise ValueError(f'Action filter not enum type:{action}')
+
         def lambda_filter(t):
             keep = True
             if tickers:
@@ -49,7 +54,7 @@ class Transactions:
             if max_year:
                 keep &= (t.date.year <= max_year)
             if action:
-                keep &= (t.action.casefold() == action.casefold())
+                keep &= (t.action == action)
             if superficial_loss is not None:
                 # superficial_loss can be set to False, so need to explicitly
                 # check that it is not set to None
