@@ -49,7 +49,7 @@ class Transactions:
             if max_year:
                 keep &= (t.date.year <= max_year)
             if action:
-                keep &= (t.action == action)
+                keep &= (t.action.casefold() == action.casefold())
             if superficial_loss is not None:
                 # superficial_loss can be set to False, so need to explicitly
                 # check that it is not set to None
