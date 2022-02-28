@@ -1,7 +1,7 @@
 import pdb
 
-import click
 import tabulate
+import click
 from itertools import groupby
 
 from capgains.exchange_rate import ExchangeRate
@@ -60,6 +60,7 @@ def capgains_calc(transactions, year, tickers=None):
     gains in a separate tabular format for each specified ticker."""
     overall_total_dividends = 0
     overall_total_gains = 0
+    final_ticker_gains = []
     filtered_transactions = transactions.filter_by(tickers=tickers)
     if not filtered_transactions:
         click.echo("No transactions available")
@@ -70,6 +71,7 @@ def capgains_calc(transactions, year, tickers=None):
         click.echo("{}-{}".format(ticker, year))
         transactions_to_report, ticker_gains = calculate_gains(filtered_transactions, year,
                                                  ticker, er_map)
+        final_ticker_gains.append(ticker_gains)
         overall_total_dividends += ticker_gains.total_dividends
         click.echo("[Total Dividends = {0:,.2f}]".format(ticker_gains.total_dividends))
         click.echo("[Ending ACB = {0:,.2f}]".format(ticker_gains.total_acb))
@@ -98,4 +100,4 @@ def capgains_calc(transactions, year, tickers=None):
         output = tabulate.tabulate(rows, headers=headers, tablefmt="psql",
                                    colalign=colalign, disable_numparse=True)
         click.echo("{}\n".format(output))
-    return overall_total_gains, overall_total_dividends
+    return overall_total_gains, overall_total_dividends, final_ticker_gains

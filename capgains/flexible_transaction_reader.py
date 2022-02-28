@@ -40,30 +40,6 @@ class TransactionParser:
         }
         return transaction.Transaction(**transaction_values)
 
-def make_transaction_parser() -> TransactionParser:
-    """Sample transaction parser for Questrade download."""
-
-    def action_fn(entry: CSV_ENTRY):
-        action_str = entry[2]
-        if action_str == '':
-            if entry[12].casefold() == 'dividends':
-                action_str = 'div'
-        return transaction.TransactionType.parse(action_str)
-
-    parser = TransactionParser(
-        name="Questrade Activity Summary Report",
-        date_fn=lambda x: datetime.strptime(x[0].split(" ")[0], '%Y-%m-%d').date(),
-        description_fn=lambda x: x[4],
-        qty_fn=lambda x: abs(Decimal(x[5])),
-        net_fn=lambda x: abs(Decimal(x[9])),
-        price_fn=lambda x: Decimal(x[6]),
-        commission_fn=lambda x: abs(Decimal(x[8])),
-        action_fn=action_fn,
-        currency_fn=lambda x: x[10],
-        ticker_fn=lambda x: x[3],
-    )
-    return parser
-
 
 def get_transactions(csv_file, parser: TransactionParser, skip_first_row: bool):
     """Convert the CSV-file entries into a list of Transactions."""

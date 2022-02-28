@@ -1,3 +1,4 @@
+"""Deprecated in favour of flexible_transaction_reader but tests and references not removed yet."""
 import csv
 import math
 
